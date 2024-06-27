@@ -1,3 +1,4 @@
+import os
 import httpx
 
 from fastapi import FastAPI, HTTPException
@@ -11,7 +12,7 @@ class Standing(SQLModel, table=True):
   short_name: str
   points: int = 0
 
-engine = create_engine("sqlite:///database.db")
+engine = create_engine(os.getenv("POSTGRES_URL"))
 SQLModel.metadata.create_all(engine)
 
 app = FastAPI()
