@@ -12,15 +12,15 @@ class Standing(SQLModel, table=True):
   short_name: str
   points: int = 0
 
-engine = create_engine(os.getenv("POSTGRESQL_URL"))
+engine = create_engine(os.getenv('POSTGRESQL_URL', 'postgresql://default:FrxPb89JpHEZ@ep-snowy-cherry-a27b5siw-pooler.eu-central-1.aws.neon.tech:5432/verceldb?sslmode=require'))
 SQLModel.metadata.create_all(engine)
 
 app = FastAPI()
 
-@app.post("/load-result")
+@app.post('/load-result')
 async def load_result(result:str):
   if not result or not result.endswith('.json'):
-    raise HTTPException(status_code=400, detail="Result json is required")
+    raise HTTPException(status_code=400, detail='Result json is required')
   
   endpoint = f"{ACC_SERVER_URL}/results/download/{result}"
 
@@ -28,7 +28,7 @@ async def load_result(result:str):
     response = await client.get(endpoint)
       
   if response.status_code != 200:
-    raise HTTPException(status_code=response.status_code, detail="Failed to fetch data")
+    raise HTTPException(status_code=response.status_code, detail='Failed to fetch data')
 
   data = response.json()
   leaderboard_data = data['sessionResult']['leaderBoardLines']
@@ -56,9 +56,9 @@ async def load_result(result:str):
   
   session.commit()
 
-  return "OK"
+  return 'OK'
 
-@app.get("/standings")
+@app.get('/standings')
 async def read_standings():
   with Session(engine) as session:
     statement = select(Standing)
