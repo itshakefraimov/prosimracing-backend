@@ -12,7 +12,7 @@ class Standing(SQLModel, table=True):
   short_name: str
   points: int = 0
 
-engine = create_engine(os.getenv("POSTGRES_URL"))
+engine = create_engine(os.getenv("POSTGRESQL_URL"))
 SQLModel.metadata.create_all(engine)
 
 app = FastAPI()
