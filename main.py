@@ -3,6 +3,7 @@ import httpx
 
 from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 
 ACC_SERVER_URL = 'https://simsolutionil.emperorservers.com'
@@ -21,6 +22,18 @@ engine = create_engine(os.getenv('POSTGRESQL_URL'))
 SQLModel.metadata.create_all(engine)
 
 app = FastAPI()
+
+origins = [
+    "*"
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=['POST', 'GET'],
+    allow_headers=['*'],
+)
 
 @app.post('/load-result')
 async def load_result(request: LoadResultRequest):
