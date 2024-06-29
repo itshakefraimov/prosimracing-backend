@@ -25,14 +25,14 @@ app = FastAPI()
 @app.post('/load-result')
 async def load_result(request: LoadResultRequest):
   admin_password = os.getenv('ADMIN_PASSWORD')
-  
+
   if request.admin_password != admin_password:
     raise HTTPException(status_code=401, detail='Unauthorized')
   
-  if not result or not result.endswith('.json'):
+  if not request.result or not request.result.endswith('.json'):
     raise HTTPException(status_code=400, detail='Result json is required')
   
-  endpoint = f"{ACC_SERVER_URL}/results/download/{result}"
+  endpoint = f"{ACC_SERVER_URL}/results/download/{request.result}"
 
   async with httpx.AsyncClient() as client:
     response = await client.get(endpoint)
