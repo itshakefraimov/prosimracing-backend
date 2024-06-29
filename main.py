@@ -1,10 +1,15 @@
 import os
 import httpx
 
+from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 from sqlmodel import Field, SQLModel, create_engine, Session, select
 
 ACC_SERVER_URL = 'https://simsolutionil.emperorservers.com'
+
+class LoadResultRequest(BaseModel):
+  result: str
+  admin_password: str
 
 class Standing(SQLModel, table=True):
   steam_id: str = Field(unique=True, primary_key=True)
@@ -12,13 +17,18 @@ class Standing(SQLModel, table=True):
   short_name: str
   points: int = 0
 
-engine = create_engine(os.getenv('POSTGRESQL_URL', 'postgresql://default:FrxPb89JpHEZ@ep-snowy-cherry-a27b5siw-pooler.eu-central-1.aws.neon.tech:5432/verceldb?sslmode=require'))
+engine = create_engine(os.getenv('POSTGRESQL_URL'))
 SQLModel.metadata.create_all(engine)
 
 app = FastAPI()
 
 @app.post('/load-result')
-async def load_result(result:str):
+async def load_result(request: LoadResultRequest):
+  admin_password = os.getenv('ADMIN_PASSWORD')
+  
+  if request.admin_password != admin_password:
+    raise HTTPException(status_code=401, detail='Unauthorized')
+  
   if not result or not result.endswith('.json'):
     raise HTTPException(status_code=400, detail='Result json is required')
   
