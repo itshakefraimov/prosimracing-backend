@@ -44,9 +44,7 @@ SQLModel.metadata.create_all(engine)
 app = FastAPI()
 
 origins = [
-  'https://prosimracing-frontend.vercel.app/',
-  'http://localhost:3000',
-  'http://localhost:8000'
+  '*',
 ]
 
 app.add_middleware(
