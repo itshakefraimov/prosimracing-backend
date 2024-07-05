@@ -6,6 +6,7 @@ from pydantic import BaseModel
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from sqlmodel import Field, SQLModel, create_engine, Session, select
+from sqlalchemy import desc
 
 load_dotenv() 
 
@@ -181,11 +182,11 @@ async def load_result_qualifier(request: LoadResultRequest):
   return 'OK'
 
 @app.get('/standings')
-async def read_standings():
+async def read_standings(limit: int = None):
   with Session(engine) as session:
-    statement = select(Standing)
+    statement = select(Standing).order_by(desc(Standing.points)).limit(limit)
     result = session.exec(statement)
-    return sorted(result, key=lambda x: x.points, reverse=True)
+    return result.all()
 
 if __name__ == '__main__':
     import uvicorn
