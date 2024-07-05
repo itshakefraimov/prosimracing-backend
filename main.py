@@ -37,6 +37,8 @@ class Standing(SQLModel, table=True):
   name: str
   short_name: str
   points: int = 0
+  pole_positions: int = 0
+  fastest_laps: int = 0
 
 engine = create_engine(os.getenv('POSTGRESQL_URL'))
 SQLModel.metadata.create_all(engine)
@@ -82,6 +84,7 @@ async def load_result(request: LoadResultRequest):
 
   data = response.json()
   leaderboard_data = data['sessionResult']['leaderBoardLines']
+  fastest_lap = data['sessionResult']['bestlap']
   db_standings = {}
 
   with Session(engine) as session:
@@ -107,6 +110,69 @@ async def load_result(request: LoadResultRequest):
         except KeyError:
           points = 0
         db_standings[steam_id] = Standing(steam_id=steam_id, name=name, short_name=short_name, points=points)
+
+      player_fastest_lap = player['timing']['bestLap']
+
+      if player_fastest_lap == fastest_lap:
+        db_standings[steam_id].fastest_laps += 1
+        db_standings[steam_id].points += 1
+
+      session.add(db_standings[steam_id])
+    
+    session.commit()
+
+  return 'OK'
+
+@app.post('/load-result-qualifier')
+async def load_result_qualifier(request: LoadResultRequest):
+  admin_password = os.getenv('ADMIN_PASSWORD')
+
+  if request.admin_password != admin_password:
+    raise HTTPException(status_code=401, detail='Unauthorized')
+  
+  endpoint = f"{ACC_SERVER_URL}/api/results/list.json?q=Q"
+
+  async with httpx.AsyncClient() as client:
+    response = await client.get(endpoint)
+  
+  if response.status_code != 200:
+    raise HTTPException(status_code=response.status_code, detail='Failed to fetch list of results')
+  
+  result_json_url = response.json()['results'][0]['results_json_url']
+  
+  endpoint = f"{ACC_SERVER_URL}{result_json_url}"
+
+  async with httpx.AsyncClient() as client:
+    response = await client.get(endpoint)
+      
+  if response.status_code != 200:
+    raise HTTPException(status_code=response.status_code, detail='Failed to fetch data')
+
+  data = response.json()
+  leaderboard_data = data['sessionResult']['leaderBoardLines']
+  fastest_lap = data['sessionResult']['bestlap']
+  db_standings = {}
+
+  with Session(engine) as session:
+    statement = select(Standing)
+    result = session.exec(statement)
+
+    for driver in result:
+      db_standings[driver.steam_id] = driver
+
+    for index, player in enumerate(leaderboard_data):
+      steam_id = player['currentDriver']['playerId'][1:]
+
+      if not steam_id in db_standings:
+        name = (player['currentDriver']['firstName'] + ' ' + player['currentDriver']['lastName']).title()
+        short_name = player['currentDriver']['shortName']
+        db_standings[steam_id] = Standing(steam_id=steam_id, name=name, short_name=short_name, points=0)
+
+      player_fastest_lap = player['timing']['bestLap']
+
+      if player_fastest_lap == fastest_lap:
+        db_standings[steam_id].pole_positions += 1
+        db_standings[steam_id].points += 1
 
       session.add(db_standings[steam_id])
     
