@@ -10,7 +10,7 @@ from sqlalchemy import desc
 
 load_dotenv() 
 
-ACC_SERVER_URL = 'http://20.217.81.221:8080/'
+ACC_SERVER_URL = 'http://20.217.81.221:8080'
 
 POSITION_POINTS = {
   1: 30,
